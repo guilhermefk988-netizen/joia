@@ -7,7 +7,9 @@
     <title>Joia</title>
     <link rel="icon" type="image/png" href="imgs/logo.png">
     <link rel="stylesheet" href="./joia.css">
+    <link rel="stylesheet" href="./joiaAnimação.css">
     <script type="module" src="./joia.js"></script>
+    <script type="module" src="./joiafaixa.js"></script>
 </head>
 
 <body>
@@ -35,6 +37,29 @@
             </video>
         </div>
     </main>
+
+<section class="section">
+    <div id="veil"></div>
+
+</section>
+
+    <!-- Precisa rodar em servidor local (ex.: Live Server), pois usa módulos ES -->
+    <script type="module">
+import { createDitherVeil } from './joiafaixa.js';
+        const veil = createDitherVeil('#veil', {
+                    src: './imgs/logo.png',
+
+            pattern: 'floyd',
+            pixelSize: 2,
+            revealRadius: 200,
+            wander: true
+        });
+
+        // Exemplos:
+        // veil.update({ pattern: 'bayer', rim: 0.3 });
+        // veil.update({ src: 'minha-imagem.jpg' });
+        // veil.destroy();
+    </script>
 </body>
 
 </html>
