@@ -10,10 +10,18 @@
     <link rel="stylesheet" href="./joiaAnimação.css">
     <script type="module" src="./joia.js"></script>
     <script type="module" src="./joiafaixa.js"></script>
+    <script type="module" src="./joianimada.js"></script>
+    <script type="module" src="./cardInfinito.js"></script>
+
+
 </head>
 
 <body>
     <header class="header">
+        <div class="logo__site">
+            <img src="imgs/logo__site.png" alt="">
+        </div>
+
         <div class="card" data-proto-card data-cat="essential">
             <div class="card-stage">
                 <div class="stage-inner p16-stage-inner">
@@ -28,6 +36,10 @@
                 </div>
             </div>
         </div>
+
+        <div class="input">
+            <input type="text">
+        </div>
     </header>
     <main class="main">
         <div class="fundo">
@@ -38,27 +50,56 @@
         </div>
     </main>
 
-<section class="section">
-    <div id="veil"></div>
+    <section class="section">
+        <div id="veil"></div>
 
-</section>
+    </section>
+    <section class="faixa">
+        <div id="faixa"></div>
+
+    </section>
+
+    <section class="cards__infinitos">
+        <div id="spiral"></div>
+
+    </section>
+
+
 
     <!-- Precisa rodar em servidor local (ex.: Live Server), pois usa módulos ES -->
     <script type="module">
-import { createDitherVeil } from './joiafaixa.js';
+        import { createDitherVeil } from './joianimada.js';
         const veil = createDitherVeil('#veil', {
-                    src: './imgs/logo.png',
+            src: './imgs/logo.png',
 
             pattern: 'floyd',
             pixelSize: 2,
             revealRadius: 200,
-            wander: true
+            wander: true,
+            transparent: true,
         });
 
         // Exemplos:
         // veil.update({ pattern: 'bayer', rim: 0.3 });
         // veil.update({ src: 'minha-imagem.jpg' });
         // veil.destroy();
+    </script>
+
+    <script type="module">
+        import { createTextLoop } from './joiafaixa.js';
+        const faixa = createTextLoop('#faixa', {
+            text: 'JOIA ✦ LIRIA',
+            shape: 'wave',
+            speed: 90,
+            ribbonColor: '#ff0000'
+        });
+
+        // faixa.update({ shape: 'infinity', cross: true });
+        // faixa.destroy();
+    </script>
+
+    <script type="module">
+
     </script>
 </body>
 

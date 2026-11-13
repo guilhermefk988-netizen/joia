@@ -1,895 +1,674 @@
-// DitherVeil — versão JS puro (sem React)
-// Se usar npm, troque a linha abaixo por: import { ... } from 'ogl';
-import { Renderer, Program, Mesh, Triangle, Texture, RenderTarget } from 'https://cdn.jsdelivr.net/npm/ogl@1.0.11/+esm';
+// TextLoop — versão JS puro (sem React)
+// Se usar npm, troque a linha abaixo por: import { gsap } from 'gsap';
+import { gsap } from 'https://cdn.jsdelivr.net/npm/gsap@3.12.5/+esm';
 
-const DEFAULT_SRC = 'https://images.unsplash.com/photo-1737071371043-761e02b1ef95?q=80&w=1400&auto=format&fit=crop';
-
-const ORDERED = { bayer: 0, noise: 1, lines: 2 };
-
-const KERNELS = {
-  atkinson: [
-    [1, 0, 1 / 8],
-    [2, 0, 1 / 8],
-    [-1, 1, 1 / 8],
-    [0, 1, 1 / 8],
-    [1, 1, 1 / 8],
-    [0, 2, 1 / 8]
-  ],
-  floyd: [
-    [1, 0, 7 / 16],
-    [-1, 1, 3 / 16],
-    [0, 1, 5 / 16],
-    [1, 1, 1 / 16]
-  ]
-};
-
-const MASK_SCALE = 0.5;
-const MAX_BURSTS = 4;
-const BURST_SECONDS = 1.2;
-const HOLD = 1.6;
-const INTRO_MS = 1100;
+const NS = 'http://www.w3.org/2000/svg';
+const VIEW_W = 1200;
+const VIEW_H = 520;
+const CX = VIEW_W / 2;
+const CY = VIEW_H / 2;
+const EDGE_PAD = 6;
+const FADE_STEPS = 8;
+const MAX_FLING = 2600;
+const MAX_BOOST = 1600;
 
 const DEFAULTS = {
-  src: DEFAULT_SRC,
-  fit: 'contain',
-  pattern: 'floyd',
-  pixelSize: 2,
-  levels: 2,
-  palette: 'duotone',
-  inkColor: '#120f17',
-  paperColor: '#f4f1ea',
-  contrast: 1.15,
-  brightness: 0,
-  revealRadius: 200,
-  softness: 0.6,
-  linger: 1,
-  rimColor: '#a78bfa',
-  rim: 0,
-  reverse: false,
-  wander: false,
-  clickBurst: true
+  text: 'React ✦ Bits',
+  shape: 'wave', // 'wave' | 'circle' | 'infinity' | 'arch' | 'line'
+  path: undefined, // path SVG customizado (opcional)
+  speed: 90,
+  direction: 'forward', // 'forward' | 'reverse'
+  separator: '✦',
+  curviness: 90,
+  tilt: 0,
+  fontSize: 46,
+  fontWeight: 800,
+  letterSpacing: 2,
+  uppercase: true,
+  color: undefined,
+  ribbon: true,
+  ribbonColor: '#5227FF',
+  ribbonWidth: 86,
+  edgeFade: 0,
+  pauseOnHover: true,
+  cross: false,
+  crossColor: undefined,
+  crossAngle: 16,
+  draggable: false,
+  scrollBoost: 0,
+  outline: false,
+  outlineWidth: 1.5
 };
 
-const hexToRgb = hex => {
-  let h = String(hex || '').replace('#', '');
-  if (h.length === 3) h = h.replace(/./g, c => c + c);
-  const n = parseInt(h.slice(0, 6), 16);
-  return Number.isNaN(n) ? [0, 0, 0] : [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
-};
+const smootherstep = t => t * t * t * (t * (t * 6 - 15) + 10);
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+const wrap = (v, length) => ((v % length) + length) % length;
 
-const fitScale = (w, h, iw, ih, contain) => {
-  const ratio = w / h / (iw / ih);
-  if (contain) return ratio > 1 ? [ratio, 1] : [1, 1 / ratio];
-  return ratio > 1 ? [1, 1 / ratio] : [ratio, 1];
-};
+const circleRadius = (curviness, ribbonWidth) =>
+  Math.min(90 + Math.max(0, curviness) * 0.95, Math.max(20, CY - Math.max(0, ribbonWidth) / 2 - EDGE_PAD));
 
-const wanderAt = (t, w, h) => [
-  w * (0.5 + 0.33 * Math.sin(t * 0.53) + 0.08 * Math.sin(t * 1.31 + 0.6)),
-  h * (0.5 + 0.28 * Math.sin(t * 0.71 + 1.1) + 0.07 * Math.cos(t * 1.57))
-];
+const buildPath = (shape, curviness, ribbonWidth, mirrored = false) => {
+  const c = Math.max(0, curviness);
+  const room = Math.max(20, CY - Math.max(0, ribbonWidth) / 2 - EDGE_PAD);
+  const flip = mirrored ? -1 : 1;
 
-const measureEdge = (context, image) => {
-  const size = 32;
-  context.canvas.width = size;
-  context.canvas.height = size;
-  context.drawImage(image, 0, 0, size, size);
-  const data = context.getImageData(0, 0, size, size).data;
-  const sum = [0, 0, 0];
-  const squares = [0, 0, 0];
-  let count = 0;
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      if (x > 0 && y > 0 && x < size - 1 && y < size - 1) continue;
-      for (let c = 0; c < 3; c++) {
-        const v = data[(y * size + x) * 4 + c] / 255;
-        sum[c] += v;
-        squares[c] += v * v;
+  switch (shape) {
+    case 'circle': {
+      const r = circleRadius(curviness, ribbonWidth);
+      if (mirrored) {
+        const rx = r * 1.22;
+        const ry = r * 0.42;
+        return `M ${CX - rx} ${CY} A ${rx} ${ry} 0 1 1 ${CX + rx} ${CY} A ${rx} ${ry} 0 1 1 ${CX - rx} ${CY} Z`;
       }
-      count++;
+      return `M ${CX - r} ${CY} A ${r} ${r} 0 1 1 ${CX + r} ${CY} A ${r} ${r} 0 1 1 ${CX - r} ${CY} Z`;
+    }
+    case 'infinity': {
+      const r = 150 + c * 1.4;
+      const h = Math.min(60 + c * 0.95, room);
+      return [
+        `M ${CX} ${CY}`,
+        `C ${CX + r * 0.55} ${CY - h} ${CX + r} ${CY - h} ${CX + r} ${CY}`,
+        `C ${CX + r} ${CY + h} ${CX + r * 0.55} ${CY + h} ${CX} ${CY}`,
+        `C ${CX - r * 0.55} ${CY - h} ${CX - r} ${CY - h} ${CX - r} ${CY}`,
+        `C ${CX - r} ${CY + h} ${CX - r * 0.55} ${CY + h} ${CX} ${CY}`,
+        'Z'
+      ].join(' ');
+    }
+    case 'arch': {
+      const rise = Math.min(120 + c * 1.1, room * 2) * flip;
+      return `M 120 ${CY + rise / 2} Q ${CX} ${CY - rise * 1.5} ${VIEW_W - 120} ${CY + rise / 2}`;
+    }
+    case 'line':
+      return `M -320 ${CY} L ${VIEW_W + 320} ${CY}`;
+    case 'wave':
+    default: {
+      const a = Math.min(c * 2.2, room * 2) * flip;
+      return `M -320 ${CY} Q -160 ${CY - a} 0 ${CY} T 320 ${CY} T 640 ${CY} T 960 ${CY} T 1280 ${CY} T ${VIEW_W + 320} ${CY}`;
     }
   }
-  const matte = [sum[0] / count, sum[1] / count, sum[2] / count];
-  const spread =
-    matte.reduce((total, mean, c) => total + Math.sqrt(Math.max(0, squares[c] / count - mean * mean)), 0) / 3;
-  return { matte, plain: spread < 0.06 };
 };
 
-let blueNoise = null;
-
-const getBlueNoise = () => {
-  if (blueNoise) return blueNoise;
-  const size = 64;
-  const n = size * size;
-  const wrap = size - 1;
-  const taps = [];
-  for (let dy = -6; dy <= 6; dy++) {
-    for (let dx = -6; dx <= 6; dx++) taps.push(dx, dy, Math.exp(-(dx * dx + dy * dy) / 4.5));
+const buildFade = edgeFade => {
+  const width = Math.min(1, Math.max(0, edgeFade)) * 0.3;
+  if (width <= 0) return [];
+  const stops = [];
+  for (let i = 0; i <= FADE_STEPS; i++) {
+    const t = i / FADE_STEPS;
+    stops.push({ offset: t * width, opacity: smootherstep(t) });
   }
-  const energy = new Float32Array(n);
-  const on = new Uint8Array(n);
-  const splat = (i, sign) => {
-    const x = i % size;
-    const y = (i - x) / size;
-    for (let k = 0; k < taps.length; k += 3) {
-      energy[((y + taps[k + 1]) & wrap) * size + ((x + taps[k]) & wrap)] += sign * taps[k + 2];
-    }
-  };
-  const find = (state, highest) => {
-    let best = 0;
-    let value = highest ? -Infinity : Infinity;
-    for (let i = 0; i < n; i++) {
-      if (on[i] !== state) continue;
-      if (highest ? energy[i] > value : energy[i] < value) {
-        value = energy[i];
-        best = i;
-      }
-    }
-    return best;
-  };
-  let seed = 7;
-  const random = () => {
-    seed = (seed * 16807) % 2147483647;
-    return seed / 2147483647;
-  };
-  const initial = Math.round(n * 0.1);
-  for (let placed = 0; placed < initial; ) {
-    const i = Math.floor(random() * n);
-    if (on[i]) continue;
-    on[i] = 1;
-    splat(i, 1);
-    placed++;
+  for (let i = FADE_STEPS; i >= 0; i--) {
+    const t = i / FADE_STEPS;
+    stops.push({ offset: 1 - t * width, opacity: smootherstep(t) });
   }
-  for (let guard = 0; guard < n; guard++) {
-    const cluster = find(1, true);
-    on[cluster] = 0;
-    splat(cluster, -1);
-    const gap = find(0, false);
-    on[gap] = 1;
-    splat(gap, 1);
-    if (gap === cluster) break;
-  }
-  const seedOn = on.slice();
-  const seedEnergy = energy.slice();
-  const rank = new Uint16Array(n);
-  for (let r = initial - 1; r >= 0; r--) {
-    const cluster = find(1, true);
-    on[cluster] = 0;
-    splat(cluster, -1);
-    rank[cluster] = r;
-  }
-  on.set(seedOn);
-  energy.set(seedEnergy);
-  for (let r = initial; r < n; r++) {
-    const gap = find(0, false);
-    on[gap] = 1;
-    splat(gap, 1);
-    rank[gap] = r;
-  }
-  const data = new Uint8Array(n * 4);
-  for (let i = 0; i < n; i++) {
-    const v = Math.floor((rank[i] / n) * 256);
-    data[i * 4] = v;
-    data[i * 4 + 1] = v;
-    data[i * 4 + 2] = v;
-    data[i * 4 + 3] = 255;
-  }
-  blueNoise = data;
-  return data;
+  return stops;
 };
 
-const diffuse = (pixels, cols, rows, kernel, levels, rgb, grade) => {
-  const channels = rgb ? 3 : 1;
-  const values = new Float32Array(cols * rows * channels);
-  for (let i = 0; i < cols * rows; i++) {
-    const r = pixels[i * 4] / 255;
-    const g = pixels[i * 4 + 1] / 255;
-    const b = pixels[i * 4 + 2] / 255;
-    if (rgb) {
-      values[i * 3] = grade(r);
-      values[i * 3 + 1] = grade(g);
-      values[i * 3 + 2] = grade(b);
-    } else {
-      values[i] = grade(0.2126 * r + 0.7152 * g + 0.0722 * b);
-    }
-  }
-  const steps = levels - 1;
-  const out = new Uint8Array(cols * rows * 4);
-  for (let y = 0; y < rows; y++) {
-    const dir = y & 1 ? -1 : 1;
-    for (let i = 0; i < cols; i++) {
-      const x = dir > 0 ? i : cols - 1 - i;
-      const p = y * cols + x;
-      for (let c = 0; c < channels; c++) {
-        const old = values[p * channels + c];
-        const q = Math.min(steps, Math.max(0, Math.round(old * steps))) / steps;
-        const err = old - q;
-        const byte = Math.round(q * 255);
-        if (rgb) out[p * 4 + c] = byte;
-        else out[p * 4] = out[p * 4 + 1] = out[p * 4 + 2] = byte;
-        for (let k = 0; k < kernel.length; k++) {
-          const nx = x + kernel[k][0] * dir;
-          const ny = y + kernel[k][1];
-          if (nx < 0 || nx >= cols || ny >= rows) continue;
-          values[(ny * cols + nx) * channels + c] += err * kernel[k][2];
-        }
-      }
-      out[p * 4 + 3] = 255;
-    }
-  }
-  return out;
+const parseHex = value => {
+  const match = /^#?([\da-f]{3}|[\da-f]{6})$/i.exec(String(value || '').trim());
+  if (!match) return null;
+  const hex = match[1].length === 3 ? match[1].replace(/./g, ch => ch + ch) : match[1];
+  return [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16));
 };
 
-const vertex = `#version 300 es
-in vec2 position;
-in vec2 uv;
-out vec2 vUv;
-void main() {
-  vUv = uv;
-  gl_Position = vec4(position, 0.0, 1.0);
-}
-`;
+const tint = (color, amount) => {
+  const rgb = parseHex(color);
+  if (!rgb) return color;
+  return `#${rgb
+    .map(v =>
+      Math.round(v + (255 - v) * amount)
+        .toString(16)
+        .padStart(2, '0')
+    )
+    .join('')}`;
+};
 
-const maskFragment = `#version 300 es
-precision highp float;
+const inkOn = color => {
+  const rgb = parseHex(color);
+  if (!rgb) return '#ffffff';
+  const [r, g, b] = rgb.map(v => {
+    const c = v / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.2 ? '#120f17' : '#ffffff';
+};
 
-uniform sampler2D tPrev;
-uniform vec2 uSize;
-uniform vec2 uFrom;
-uniform vec2 uTo;
-uniform float uRadius;
-uniform float uSoftness;
-uniform float uStrength;
-uniform float uFade;
-uniform float uHold;
-
-in vec2 vUv;
-out vec4 fragColor;
-
-float strokeDistance(vec2 p, vec2 a, vec2 b) {
-  vec2 ab = b - a;
-  float h = clamp(dot(p - a, ab) / max(dot(ab, ab), 0.0001), 0.0, 1.0);
-  return length(p - a - ab * h);
-}
-
-void main() {
-  vec2 p = vec2(vUv.x, 1.0 - vUv.y) * uSize;
-  float trail = max(texture(tPrev, vUv).r - uFade, 0.0);
-  float band = max(uRadius * uSoftness, 1.0) * uHold;
-  float d = strokeDistance(p, uFrom, uTo);
-  trail = max(trail, clamp((uRadius - d) / band, 0.0, 1.0) * uStrength);
-  fragColor = vec4(trail, 0.0, 0.0, 1.0);
-}
-`;
-
-const viewFragment = `#version 300 es
-precision highp float;
-precision highp int;
-
-uniform sampler2D tImage;
-uniform sampler2D tMask;
-uniform sampler2D tNoise;
-uniform sampler2D tDiffused;
-uniform vec2 uResolution;
-uniform vec2 uCover;
-uniform float uLod;
-uniform float uCell;
-uniform int uPattern;
-uniform int uPalette;
-uniform float uLevels;
-uniform vec3 uInk;
-uniform vec3 uPaper;
-uniform vec3 uRimColor;
-uniform float uRim;
-uniform float uContrast;
-uniform float uBrightness;
-uniform float uReverse;
-uniform float uIntro;
-uniform float uHold;
-uniform vec3 uMatte;
-uniform float uKey;
-uniform vec2 uSize;
-uniform vec4 uBursts[4];
-uniform float uBurstWidth;
-
-in vec2 vUv;
-out vec4 fragColor;
-
-float bayer(vec2 cell) {
-  ivec2 p = ivec2(mod(cell, 8.0));
-  int v = p.x ^ p.y;
-  int m = ((v & 1) << 5) | ((p.y & 1) << 4) | ((v & 2) << 2) | ((p.y & 2) << 1) | ((v & 4) >> 1) | ((p.y & 4) >> 2);
-  return (float(m) + 0.5) / 64.0;
-}
-
-float blueNoise(vec2 cell) {
-  return (texelFetch(tNoise, ivec2(mod(cell, 64.0)), 0).r * 255.0 + 0.5) / 256.0;
-}
-
-float engraving(vec2 cell) {
-  float period = 6.0;
-  float f = (mod(cell.x + cell.y, period) + 0.5) / period;
-  return clamp(abs(f * 2.0 - 1.0) + (bayer(cell) - 0.5) * (2.0 / period), 0.0, 1.0);
-}
-
-vec2 imageUv(vec2 uv) {
-  return (uv - 0.5) * uCover + 0.5;
-}
-
-float within(vec2 p) {
-  vec2 s = step(vec2(0.0), p) * step(p, vec2(1.0));
-  return s.x * s.y;
-}
-
-vec3 grade(vec3 c) {
-  return pow(clamp((c - 0.5) * uContrast + 0.5 + uBrightness, 0.0, 1.0), vec3(1.6));
-}
-
-float shockwave(vec2 p) {
-  float value = 0.0;
-  for (int i = 0; i < 4; i++) {
-    vec4 burst = uBursts[i];
-    if (burst.w <= 0.0) continue;
-    float offset = distance(p, burst.xy) - burst.z;
-    float edge = offset > 0.0 ? offset / (uBurstWidth * 0.35) : -offset / uBurstWidth;
-    value = max(value, clamp(1.0 - edge, 0.0, 1.0) * burst.w);
+// Cria um elemento SVG com atributos (ignora undefined/null)
+const el = (tag, attrs = {}, parent) => {
+  const node = document.createElementNS(NS, tag);
+  for (const key in attrs) {
+    const value = attrs[key];
+    if (value !== undefined && value !== null) node.setAttribute(key, value);
   }
-  return value;
-}
+  if (parent) parent.appendChild(node);
+  return node;
+};
 
-vec3 toned(vec3 c) {
-  return uPalette == 1 ? grade(c) : grade(vec3(dot(c, vec3(0.2126, 0.7152, 0.0722))));
-}
-
-vec3 quantize(vec3 v, float t) {
-  float steps = max(uLevels - 1.0, 1.0);
-  vec3 s = v * steps;
-  vec3 base = floor(s);
-  return min(base + step(vec3(t), s - base), vec3(steps)) / steps;
-}
-
-void main() {
-  vec2 px = vec2(gl_FragCoord.x, uResolution.y - gl_FragCoord.y);
-  vec2 cell = floor(px / uCell);
-  vec2 center = (cell + 0.5) * uCell;
-  vec2 cellUv = vec2(center.x / uResolution.x, 1.0 - center.y / uResolution.y);
-
-  vec2 sampleUv = imageUv(cellUv);
-  float framed = within(sampleUv);
-  vec3 level;
-  if (uPattern == 3) {
-    level = texelFetch(tDiffused, ivec2(cell), 0).rgb;
-  } else {
-    vec3 c = mix(uMatte, textureLod(tImage, sampleUv, uLod).rgb, framed);
-    float t = uPattern == 1 ? blueNoise(cell) : (uPattern == 2 ? engraving(cell) : bayer(cell));
-    level = quantize(toned(c), t);
-  }
-
-  vec3 color = mix(uInk, mix(uInk, uPaper, level), max(framed, uKey));
-  vec3 backdrop = mix(uInk, uPaper, toned(uMatte));
-  vec2 photoUv = imageUv(vUv);
-  vec3 raw = texture(tImage, photoUv).rgb;
-  float plain = uKey * (1.0 - smoothstep(0.05, 0.22, distance(raw, uMatte)));
-  vec3 photo = mix(mix(uInk, backdrop, uKey), mix(raw, backdrop, plain), within(photoUv));
-
-  vec2 point = vec2(cellUv.x, 1.0 - cellUv.y) * uSize;
-  float mask = max(clamp(texture(tMask, cellUv).r * uHold, 0.0, 1.0), shockwave(point));
-  float shown = mix(mask, 1.0 - mask, uReverse);
-  float order = bayer(cell.yx);
-  float low = order * (1.0 - uRim);
-  color = mix(color, uRimColor, step(low, shown) * step(0.001, uRim));
-  color = mix(color, photo, step(low + uRim, shown));
-
-  vec2 aspect = vec2(uResolution.x / uResolution.y, 1.0);
-  float spread = length((cellUv - 0.5) * aspect) / length(aspect * 0.5);
-  float appear = step(spread * 0.72 + bayer(cell + vec2(3.0, 5.0)) * 0.28, uIntro * 1.001);
-  fragColor = vec4(mix(uInk, color, appear), 1.0);
-}
+// CSS mínimo, injetado uma única vez (substitui o TextLoop.css)
+const injectStyles = () => {
+  if (document.getElementById('text-loop-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'text-loop-styles';
+  style.textContent = `
+.text-loop { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.text-loop-svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.text-loop-text { user-select: none; -webkit-user-select: none; }
+.text-loop-measure { visibility: hidden; pointer-events: none; }
+.text-loop--draggable { cursor: grab; touch-action: pan-y; }
 `;
+  document.head.appendChild(style);
+};
+
+let uid = 0;
 
 /**
- * Cria o efeito DitherVeil dentro de um elemento.
+ * Cria o TextLoop dentro de um elemento (o elemento precisa ter altura!).
  * @param {HTMLElement|string} target  elemento ou seletor CSS
  * @param {object} options             mesmas props do componente React
  * @returns {{ update(opts: object): void, destroy(): void }}
  */
-export function createDitherVeil(target, options = {}) {
+export function createTextLoop(target, options = {}) {
   const container = typeof target === 'string' ? document.querySelector(target) : target;
-  if (!container) throw new Error('DitherVeil: container não encontrado');
+  if (!container) throw new Error('TextLoop: container não encontrado');
 
-  container.classList.add('dither-veil');
+  injectStyles();
+  container.classList.add('text-loop');
 
-  let settings = { ...DEFAULTS, ...options };
-  let wake = () => {};
-  let cleanup = null;
+  let s = { ...DEFAULTS, ...options };
+  let progress = 0;
+  let metrics = { length: 0, reps: 1, crossLength: 0, crossReps: 1 };
+  let nodes = null;
+  let stopAnim = () => {};
 
-  const setup = () => {
-    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    const renderer = new Renderer({ dpr: Math.min(window.devicePixelRatio || 1, 2), alpha: false, antialias: false });
-    const gl = renderer.gl;
-    const canvas = gl.canvas;
-    canvas.style.display = 'block';
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    container.appendChild(canvas);
+  // ---------- Montagem do SVG ----------
+  const render = () => {
+    const base = `text-loop-${++uid}`;
+    const pathId = base;
+    const crossId = `${base}-cross`;
+    const fadeId = `${base}-fade`;
+    const maskId = `${base}-mask`;
+    const shadowId = `${base}-shadow`;
+    const underId = `${base}-under`;
 
-    const floatMask = renderer.isWebgl2 && !!renderer.getExtension('EXT_color_buffer_float');
-    const geometry = new Triangle(gl);
+    const custom = Boolean(s.path);
+    const d = s.path || buildPath(s.shape, s.curviness, s.ribbonWidth);
+    const crossD = !s.cross
+      ? ''
+      : s.path ||
+        buildPath(s.shape, s.curviness, s.ribbonWidth, s.shape === 'wave' || s.shape === 'arch' || s.shape === 'circle');
+    const fade = buildFade(s.edgeFade);
+    const fill = s.color || (s.ribbon ? '#ffffff' : 'currentColor');
 
-    const dataTexture = () =>
-      new Texture(gl, {
-        image: new Uint8Array(4),
-        width: 1,
-        height: 1,
-        generateMipmaps: false,
-        flipY: false,
-        minFilter: gl.NEAREST,
-        magFilter: gl.NEAREST
-      });
-    const imageTexture = new Texture(gl, { minFilter: gl.LINEAR_MIPMAP_LINEAR, magFilter: gl.LINEAR });
-    const noiseTexture = dataTexture();
-    const diffusedTexture = dataTexture();
+    const half = s.cross ? s.crossAngle / 2 : 0;
+    const mainAngle = s.tilt + half;
+    const crossAngleDeg = s.tilt - half;
+    const mainTransform = mainAngle ? `rotate(${mainAngle} ${CX} ${CY})` : undefined;
+    const crossTransform = crossAngleDeg ? `rotate(${crossAngleDeg} ${CX} ${CY})` : undefined;
+    const crossTape = s.crossColor || tint(s.ribbonColor, 0.62);
+    const crossFill = s.ribbon ? inkOn(crossTape) : s.crossColor || 'currentColor';
+    const crossDim = !s.ribbon && !s.crossColor ? 0.45 : 1;
 
-    const createMask = (w, h) =>
-      new RenderTarget(gl, {
-        width: w,
-        height: h,
-        depth: false,
-        type: floatMask ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE,
-        internalFormat: floatMask ? gl.RGBA16F : gl.RGBA,
-        minFilter: gl.LINEAR,
-        magFilter: gl.LINEAR
-      });
-    const destroyMask = t => {
-      gl.deleteFramebuffer(t.buffer);
-      gl.deleteTexture(t.texture.texture);
-    };
-    let masks = [createMask(2, 2), createMask(2, 2)];
+    const baseText = s.uppercase ? String(s.text).toUpperCase() : String(s.text);
+    const gap = s.separator ? `\u00A0${s.separator}\u00A0` : '\u00A0\u00A0\u00A0';
+    const unit = `${baseText}${gap}`;
 
-    const maskUniforms = {
-      tPrev: { value: masks[0].texture },
-      uSize: { value: [1, 1] },
-      uFrom: { value: [0, 0] },
-      uTo: { value: [0, 0] },
-      uRadius: { value: 1 },
-      uSoftness: { value: 0.5 },
-      uStrength: { value: 0 },
-      uFade: { value: 1 },
-      uHold: { value: HOLD }
-    };
-    const viewUniforms = {
-      tImage: { value: imageTexture },
-      tMask: { value: masks[0].texture },
-      tNoise: { value: noiseTexture },
-      tDiffused: { value: diffusedTexture },
-      uResolution: { value: [1, 1] },
-      uCover: { value: [1, 1] },
-      uLod: { value: 0 },
-      uCell: { value: 3 },
-      uPattern: { value: 0 },
-      uPalette: { value: 0 },
-      uLevels: { value: 2 },
-      uInk: { value: [0, 0, 0] },
-      uPaper: { value: [1, 1, 1] },
-      uRimColor: { value: [1, 1, 1] },
-      uRim: { value: 0 },
-      uContrast: { value: 1 },
-      uBrightness: { value: 0 },
-      uReverse: { value: 0 },
-      uIntro: { value: 0 },
-      uHold: { value: HOLD },
-      uMatte: { value: [0, 0, 0] },
-      uKey: { value: 0 },
-      uSize: { value: [1, 1] },
-      uBursts: { value: Array.from({ length: MAX_BURSTS * 4 }, () => 0) },
-      uBurstWidth: { value: 60 }
-    };
-    const program = (fragment, uniforms) =>
-      new Program(gl, { vertex, fragment, uniforms, depthTest: false, depthWrite: false });
-    const maskMesh = new Mesh(gl, { geometry, program: program(maskFragment, maskUniforms) });
-    const viewMesh = new Mesh(gl, { geometry, program: program(viewFragment, viewUniforms) });
+    const textStyle = `font-size:${s.fontSize}px;font-weight:${s.fontWeight};letter-spacing:${s.letterSpacing}px`;
 
-    const sampler = document.createElement('canvas');
-    const samplerContext = sampler.getContext('2d', { willReadFrequently: true });
-
-    let image = null;
-    let introStart = 0;
-    let diffusedKey = '';
-    let diffusionBlocked = false;
-    let width = 1;
-    let height = 1;
-    let visible = true;
-    let raf = 0;
-    let last = performance.now();
-    let trailUntil = 0;
-    let presence = 0;
-    let drift = 0;
-    const pointer = { x: 0, y: 0, inside: false, fresh: true, placed: false };
-    const brush = { x: 0, y: 0, px: 0, py: 0 };
-    const bursts = [];
-
-    let resizePending = false;
-    const applyLayout = () => {
-      width = Math.max(1, container.clientWidth);
-      height = Math.max(1, container.clientHeight);
-      renderer.setSize(width, height);
-      viewUniforms.uResolution.value = [canvas.width, canvas.height];
-      maskUniforms.uSize.value = [width, height];
-      viewUniforms.uSize.value = [width, height];
-      const mw = Math.max(2, Math.round(width * MASK_SCALE));
-      const mh = Math.max(2, Math.round(height * MASK_SCALE));
-      if (mw !== masks[0].width || mh !== masks[0].height) {
-        const previous = masks;
-        masks = [createMask(mw, mh), createMask(mw, mh)];
-        maskUniforms.tPrev.value = previous[0].texture;
-        maskUniforms.uStrength.value = 0;
-        maskUniforms.uFade.value = 0;
-        renderer.render({ scene: maskMesh, target: masks[0] });
-        previous.forEach(destroyMask);
-      }
-      if (!pointer.placed) {
-        pointer.x = width / 2;
-        pointer.y = height / 2;
-      }
-    };
-
-    const layout = () => {
-      resizePending = true;
-      wake();
-    };
-
-    const updateDiffusion = (cell, s) => {
-      if (!image || !samplerContext) return;
-      const cols = Math.ceil(canvas.width / cell);
-      const rows = Math.ceil(canvas.height / cell);
-      const key = [
-        s.pattern,
-        s.levels,
-        s.palette,
-        s.contrast,
-        s.brightness,
-        s.fit,
-        cols,
-        rows,
-        canvas.width,
-        canvas.height
-      ].join('|');
-      if (key === diffusedKey) return;
-      diffusedKey = key;
-      const [cx, cy] = viewUniforms.uCover.value;
-      const iw = image.naturalWidth;
-      const ih = image.naturalHeight;
-      sampler.width = cols;
-      sampler.height = rows;
-      samplerContext.imageSmoothingEnabled = true;
-      samplerContext.imageSmoothingQuality = 'high';
-      const [mr, mg, mb] = viewUniforms.uMatte.value;
-      samplerContext.fillStyle = `rgb(${mr * 255}, ${mg * 255}, ${mb * 255})`;
-      samplerContext.fillRect(0, 0, cols, rows);
-      const sx = (0.5 - 0.5 * cx) * iw;
-      const sy = (0.5 - 0.5 * cy) * ih;
-      const sw = ((cols * cell) / canvas.width) * cx * iw;
-      const sh = ((rows * cell) / canvas.height) * cy * ih;
-      const x0 = Math.max(sx, 0);
-      const y0 = Math.max(sy, 0);
-      const x1 = Math.min(sx + sw, iw);
-      const y1 = Math.min(sy + sh, ih);
-      if (x1 > x0 && y1 > y0) {
-        samplerContext.drawImage(
-          image,
-          x0,
-          y0,
-          x1 - x0,
-          y1 - y0,
-          ((x0 - sx) / sw) * cols,
-          ((y0 - sy) / sh) * rows,
-          ((x1 - x0) / sw) * cols,
-          ((y1 - y0) / sh) * rows
-        );
-      }
-      const grade = v => Math.pow(Math.min(1, Math.max(0, (v - 0.5) * s.contrast + 0.5 + s.brightness)), 1.6);
-      const pixels = samplerContext.getImageData(0, 0, cols, rows).data;
-      diffusedTexture.image = diffuse(pixels, cols, rows, KERNELS[s.pattern], s.levels, s.palette === 'rgb', grade);
-      diffusedTexture.width = cols;
-      diffusedTexture.height = rows;
-      diffusedTexture.needsUpdate = true;
-    };
-
-    const frame = now => {
-      raf = 0;
-      if (resizePending) {
-        resizePending = false;
-        applyLayout();
-      }
-      const s = settings;
-      const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
-      last = now;
-
-      const wanderOn = s.wander && !reducedMotion;
-      let targetX = pointer.x;
-      let targetY = pointer.y;
-      if (!pointer.inside && wanderOn) {
-        drift = Math.min(1, drift + dt / 1.2);
-        const [wx, wy] = wanderAt(now / 1000, width, height);
-        const k = drift * drift * (3 - 2 * drift);
-        targetX += (wx - targetX) * k;
-        targetY += (wy - targetY) * k;
-      } else {
-        drift = 0;
-      }
-
-      presence += ((pointer.inside || wanderOn ? 1 : 0) - presence) * (1 - Math.exp(-dt / 0.16));
-
-      if (pointer.fresh) {
-        brush.x = brush.px = targetX;
-        brush.y = brush.py = targetY;
-        pointer.fresh = false;
-      } else {
-        const follow = 1 - Math.exp(-dt / 0.035);
-        brush.x += (targetX - brush.x) * follow;
-        brush.y += (targetY - brush.y) * follow;
-      }
-
-      const burstData = viewUniforms.uBursts.value;
-      burstData.fill(0);
-      for (let i = bursts.length - 1; i >= 0; i--) {
-        if ((now - bursts[i].start) / 1000 >= BURST_SECONDS) bursts.splice(i, 1);
-      }
-      bursts.forEach((b, i) => {
-        const k = Math.max(0, (now - b.start) / 1000 / BURST_SECONDS);
-        const reach =
-          Math.hypot(Math.max(b.x, width - b.x), Math.max(b.y, height - b.y)) + viewUniforms.uBurstWidth.value;
-        burstData[i * 4] = b.x;
-        burstData[i * 4 + 1] = b.y;
-        burstData[i * 4 + 2] = reach * Math.sin((k * Math.PI) / 2);
-        burstData[i * 4 + 3] = 1 - k * k * k;
-      });
-
-      if (presence > 0.002) trailUntil = now + s.linger * 1000 + 150;
-
-      const minFade = floatMask ? 0 : 1.5 / 255;
-      const fade = s.linger > 0 ? dt / s.linger : 1;
-      maskUniforms.tPrev.value = masks[0].texture;
-      maskUniforms.uFrom.value = [brush.px, brush.py];
-      maskUniforms.uTo.value = [brush.x, brush.y];
-      maskUniforms.uRadius.value = s.revealRadius * (0.45 + 0.55 * presence);
-      maskUniforms.uSoftness.value = s.softness;
-      maskUniforms.uStrength.value = presence;
-      maskUniforms.uFade.value = Math.max(fade, minFade);
-      viewUniforms.uBurstWidth.value = Math.max(60, s.revealRadius * 0.9);
-      renderer.render({ scene: maskMesh, target: masks[1] });
-      masks.reverse();
-      brush.px = brush.x;
-      brush.py = brush.y;
-
-      const cell = Math.max(1, Math.round(s.pixelSize * renderer.dpr));
-      if (image) {
-        viewUniforms.uCover.value = fitScale(
-          canvas.width,
-          canvas.height,
-          image.naturalWidth,
-          image.naturalHeight,
-          s.fit === 'contain'
-        );
-      }
-      let patternIndex = ORDERED[s.pattern] ?? 0;
-      if (KERNELS[s.pattern]) {
-        patternIndex = 0;
-        if (image && !diffusionBlocked) {
-          try {
-            updateDiffusion(cell, s);
-            patternIndex = 3;
-          } catch {
-            diffusionBlocked = true;
+    const paint = (ink, opacity) =>
+      s.outline
+        ? {
+            fill: 'none',
+            stroke: ink,
+            'stroke-opacity': opacity,
+            'stroke-width': s.outlineWidth,
+            'stroke-linejoin': 'round'
           }
-        }
-      }
-      if (patternIndex === 1 && noiseTexture.width !== 64) {
-        noiseTexture.image = getBlueNoise();
-        noiseTexture.width = 64;
-        noiseTexture.height = 64;
-        noiseTexture.needsUpdate = true;
-      }
+        : { fill: ink, 'fill-opacity': opacity };
 
-      const texelsPerPixel = image ? (viewUniforms.uCover.value[0] * image.naturalWidth) / canvas.width : 1;
-      viewUniforms.tMask.value = masks[0].texture;
-      viewUniforms.uCell.value = cell;
-      viewUniforms.uLod.value = Math.log2(Math.max(cell * texelsPerPixel, 1));
-      viewUniforms.uPattern.value = patternIndex;
-      viewUniforms.uPalette.value = s.palette === 'rgb' ? 1 : 0;
-      viewUniforms.uLevels.value = Math.max(2, Math.round(s.levels));
-      viewUniforms.uInk.value = hexToRgb(s.inkColor);
-      viewUniforms.uPaper.value = hexToRgb(s.paperColor);
-      viewUniforms.uRimColor.value = hexToRgb(s.rimColor);
-      viewUniforms.uRim.value = Math.min(Math.max(s.rim, 0), 0.95);
-      viewUniforms.uContrast.value = s.contrast;
-      viewUniforms.uBrightness.value = s.brightness;
-      viewUniforms.uReverse.value = s.reverse ? 1 : 0;
-      const intro = image ? Math.min(1, (now - introStart) / INTRO_MS) : 0;
-      viewUniforms.uIntro.value = 1 - Math.pow(1 - intro, 2);
-      renderer.render({ scene: viewMesh });
+    container.replaceChildren();
+    container.classList.toggle('text-loop--draggable', Boolean(s.draggable));
 
-      const busy =
-        pointer.inside || wanderOn || presence > 0.002 || bursts.length > 0 || now < trailUntil || (image && intro < 1);
-      if (busy && visible) raf = requestAnimationFrame(frame);
+    const svg = el(
+      'svg',
+      {
+        class: 'text-loop-svg',
+        viewBox: `0 0 ${VIEW_W} ${VIEW_H}`,
+        preserveAspectRatio: 'xMidYMid meet',
+        role: 'img',
+        'aria-label': s.text
+      },
+      container
+    );
+    const defs = el('defs', {}, svg);
+
+    if (fade.length > 0) {
+      const gradient = el('linearGradient', { id: fadeId, x1: 0, y1: 0, x2: 1, y2: 0 }, defs);
+      fade.forEach(stop =>
+        el('stop', { offset: stop.offset, 'stop-color': '#ffffff', 'stop-opacity': stop.opacity }, gradient)
+      );
+      const mask = el(
+        'mask',
+        { id: maskId, maskUnits: 'userSpaceOnUse', x: 0, y: 0, width: VIEW_W, height: VIEW_H },
+        defs
+      );
+      el('rect', { width: VIEW_W, height: VIEW_H, fill: `url(#${fadeId})` }, mask);
+    }
+
+    if (s.cross && s.ribbon) {
+      const filter = el(
+        'filter',
+        {
+          id: shadowId,
+          filterUnits: 'userSpaceOnUse',
+          x: -VIEW_W,
+          y: -VIEW_H,
+          width: VIEW_W * 3,
+          height: VIEW_H * 3
+        },
+        defs
+      );
+      el('feGaussianBlur', { stdDeviation: Math.max(4, s.ribbonWidth * 0.11) }, filter);
+
+      const under = el(
+        'mask',
+        {
+          id: underId,
+          maskUnits: 'userSpaceOnUse',
+          x: -VIEW_W,
+          y: -VIEW_H,
+          width: VIEW_W * 3,
+          height: VIEW_H * 3
+        },
+        defs
+      );
+      const underGroup = el('g', { transform: crossTransform }, under);
+      el(
+        'path',
+        {
+          d: crossD,
+          fill: 'none',
+          stroke: '#ffffff',
+          'stroke-width': s.ribbonWidth,
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round'
+        },
+        underGroup
+      );
+    }
+
+    // Texto escondido só para medir a largura de uma unidade
+    const measureEl = el('text', { class: 'text-loop-measure', style: textStyle, 'aria-hidden': 'true' }, svg);
+    measureEl.textContent = unit;
+
+    const root = el('g', { mask: fade.length > 0 ? `url(#${maskId})` : undefined }, svg);
+
+    // Cria um <text><textPath/></text>
+    const makeText = (parent, paintAttrs, href) => {
+      const text = el(
+        'text',
+        {
+          class: 'text-loop-text',
+          style: textStyle,
+          ...paintAttrs,
+          'dominant-baseline': 'central',
+          'aria-hidden': 'true'
+        },
+        parent
+      );
+      const textPath = el('textPath', { href: `#${href}`, startOffset: 0 }, text);
+      textPath.textContent = unit;
+      return { text, textPath };
     };
 
-    wake = () => {
-      if (raf || !visible) return;
-      last = performance.now();
-      raf = requestAnimationFrame(frame);
-    };
+    let crossPath = null;
+    let crossHead = null;
+    let crossTail = null;
+    const crossTexts = [];
 
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.decoding = 'async';
-    img.onload = () => {
-      image = img;
-      imageTexture.image = img;
-      try {
-        if (samplerContext) {
-          const edge = measureEdge(samplerContext, img);
-          viewUniforms.uMatte.value = edge.matte;
-          viewUniforms.uKey.value = edge.plain ? 1 : 0;
-        }
-      } catch {}
-      introStart = performance.now();
-      wake();
-    };
-    img.src = settings.src;
+    if (s.cross) {
+      const crossGroup = el('g', { transform: crossTransform }, root);
+      crossPath = el(
+        'path',
+        {
+          id: crossId,
+          d: crossD,
+          fill: 'none',
+          stroke: s.ribbon ? crossTape : 'none',
+          'stroke-width': s.ribbon ? s.ribbonWidth : 0,
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round'
+        },
+        crossGroup
+      );
+      const crossPaint = paint(crossFill, crossDim);
+      const a = makeText(crossGroup, crossPaint, crossId);
+      const b = makeText(crossGroup, crossPaint, crossId);
+      crossHead = a.textPath;
+      crossTail = b.textPath;
+      crossTexts.push(a.text, b.text);
+    }
 
-    const locate = e => {
-      const rect = container.getBoundingClientRect();
-      pointer.x = e.clientX - rect.left;
-      pointer.y = e.clientY - rect.top;
-      pointer.placed = true;
-    };
-    const onMove = e => {
-      locate(e);
-      if (!pointer.inside) {
-        pointer.inside = true;
-        pointer.fresh = true;
-      }
-      wake();
-    };
-    const onLeave = () => {
-      pointer.inside = false;
-      wake();
-    };
-    const onDown = e => {
-      onMove(e);
-      if (!settings.clickBurst || (e.pointerType === 'mouse' && e.button !== 0)) return;
-      bursts.push({ x: pointer.x, y: pointer.y, start: performance.now() });
-      if (bursts.length > MAX_BURSTS) bursts.shift();
-    };
-    container.addEventListener('pointermove', onMove, { passive: true });
-    container.addEventListener('pointerenter', onMove, { passive: true });
-    container.addEventListener('pointerdown', onDown, { passive: true });
-    container.addEventListener('pointerleave', onLeave, { passive: true });
-    container.addEventListener('pointercancel', onLeave, { passive: true });
+    if (s.cross && s.ribbon) {
+      const underWrap = el('g', { mask: `url(#${underId})` }, root);
+      const shadow = el(
+        'g',
+        { filter: `url(#${shadowId})`, transform: `translate(0 ${Math.max(4, s.ribbonWidth * 0.08)})` },
+        underWrap
+      );
+      const shadowRot = el('g', { transform: mainTransform }, shadow);
+      el(
+        'path',
+        {
+          d,
+          fill: 'none',
+          stroke: '#000000',
+          'stroke-opacity': 0.42,
+          'stroke-width': s.ribbonWidth,
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round'
+        },
+        shadowRot
+      );
+    }
 
-    const resizeObserver = new ResizeObserver(() => {
-      layout();
-      wake();
-    });
-    resizeObserver.observe(container);
-    const intersectionObserver = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting;
-      wake();
-    });
-    intersectionObserver.observe(container);
+    const mainGroup = el('g', { transform: mainTransform }, root);
+    const path = el(
+      'path',
+      {
+        id: pathId,
+        d,
+        fill: 'none',
+        stroke: s.ribbon ? s.ribbonColor : 'none',
+        'stroke-width': s.ribbon ? s.ribbonWidth : 0,
+        'stroke-linecap': 'round',
+        'stroke-linejoin': 'round'
+      },
+      mainGroup
+    );
+    const mainPaint = paint(fill, 1);
+    const m1 = makeText(mainGroup, mainPaint, pathId);
+    const m2 = makeText(mainGroup, mainPaint, pathId);
 
-    layout();
-    wake();
-
-    return () => {
-      cancelAnimationFrame(raf);
-      wake = () => {};
-      resizeObserver.disconnect();
-      intersectionObserver.disconnect();
-      img.onload = null;
-      container.removeEventListener('pointermove', onMove);
-      container.removeEventListener('pointerenter', onMove);
-      container.removeEventListener('pointerdown', onDown);
-      container.removeEventListener('pointerleave', onLeave);
-      container.removeEventListener('pointercancel', onLeave);
-      gl.getExtension('WEBGL_lose_context')?.loseContext();
-      if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+    nodes = {
+      svg,
+      path,
+      crossPath,
+      measureEl,
+      head: m1.textPath,
+      tail: m2.textPath,
+      mainTexts: [m1.text, m2.text],
+      crossHead,
+      crossTail,
+      crossTexts,
+      unit,
+      custom,
+      mainAngle
     };
   };
 
-  cleanup = setup();
+  // ---------- Medidas ----------
+  const applyMetrics = n => {
+    const loopText = n.unit.repeat(metrics.reps);
+    const crossText = n.unit.repeat(metrics.crossReps);
+    n.head.textContent = loopText;
+    n.tail.textContent = loopText;
+    n.mainTexts.forEach(t => {
+      t.setAttribute('textLength', String(metrics.length));
+      t.setAttribute('lengthAdjust', 'spacing');
+    });
+    if (n.crossHead && n.crossTail) {
+      n.crossHead.textContent = crossText;
+      n.crossTail.textContent = crossText;
+      n.crossTexts.forEach(t => {
+        if (metrics.crossLength) t.setAttribute('textLength', String(metrics.crossLength));
+        t.setAttribute('lengthAdjust', 'spacing');
+      });
+    }
+  };
+
+  const measure = n => {
+    if (n !== nodes) return; // render antigo, ignora
+    let length = 0;
+    let unitWidth = 0;
+    let crossLength = 0;
+    try {
+      length = n.path.getTotalLength();
+      unitWidth = n.measureEl.getComputedTextLength();
+      crossLength = n.crossPath ? n.crossPath.getTotalLength() : 0;
+    } catch {
+      return;
+    }
+    if (!length) return;
+
+    const repsFor = total => (unitWidth > 0 ? Math.max(1, Math.round(total / unitWidth)) : 1);
+    const next = { length, reps: repsFor(length), crossLength, crossReps: repsFor(crossLength) };
+    const same =
+      next.length === metrics.length &&
+      next.reps === metrics.reps &&
+      next.crossLength === metrics.crossLength &&
+      next.crossReps === metrics.crossReps;
+    metrics = next;
+    applyMetrics(n);
+    if (!same || !n.bound) {
+      n.bound = true;
+      bindAnimation(n);
+    }
+  };
+
+  // ---------- Animação / interação ----------
+  const bindAnimation = n => {
+    stopAnim();
+    const { length, crossLength } = metrics;
+    const root = container;
+    const svg = n.svg;
+    if (!length) return;
+
+    const crossPaths = s.cross && n.crossHead && n.crossTail && crossLength > 0 ? [n.crossHead, n.crossTail] : null;
+
+    let travel = progress * length;
+    const apply = () => {
+      const offset = wrap(travel, length);
+      progress = offset / length;
+      n.head.setAttribute('startOffset', String(offset));
+      n.tail.setAttribute('startOffset', String(offset - length));
+      if (crossPaths) {
+        const crossOffset = wrap(-travel, crossLength);
+        crossPaths[0].setAttribute('startOffset', String(crossOffset));
+        crossPaths[1].setAttribute('startOffset', String(crossOffset - crossLength));
+      }
+    };
+    apply();
+
+    const reduced = Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
+    const sign = s.direction === 'reverse' ? -1 : 1;
+    const base = reduced ? 0 : Math.max(0, s.speed) * sign;
+    const hover = { scale: 1 };
+    const angle = (n.mainAngle * Math.PI) / 180;
+    const circular = !n.custom && s.shape === 'circle';
+    const radius = circleRadius(s.curviness, s.ribbonWidth);
+    const boosting = s.scrollBoost > 0 && !reduced;
+
+    let fling = 0;
+    let boost = 0;
+    let scrollVelocity = 0;
+    let scrollAt = 0;
+    let scrollPos = 0;
+    let scrollSource = null;
+    let dragging = false;
+    let pointerId = null;
+    let lastX = 0;
+    let lastY = 0;
+    let lastT = 0;
+    let velocity = 0;
+    let center = { x: 0, y: 0 };
+    let running = false;
+
+    const tick = (_, deltaMs) => {
+      if (dragging) return;
+      const dt = Math.min(0.05, deltaMs / 1000);
+      fling *= Math.exp(-dt / 0.55);
+      if (boosting) {
+        if (performance.now() - scrollAt > 90) scrollVelocity *= Math.exp(-dt / 0.12);
+        const target = clamp(scrollVelocity * s.scrollBoost * 0.35 * sign, -MAX_BOOST, MAX_BOOST);
+        boost += (target - boost) * (1 - Math.exp(-dt / 0.18));
+      }
+      const v = base * hover.scale + fling + boost;
+      if (Math.abs(v) < 0.01) return;
+      travel += v * dt;
+      apply();
+    };
+
+    const start = () => {
+      if (running || reduced) return;
+      running = true;
+      gsap.ticker.add(tick);
+    };
+    const stop = () => {
+      if (!running) return;
+      running = false;
+      gsap.ticker.remove(tick);
+    };
+
+    const glide = hovered =>
+      gsap.to(hover, {
+        scale: hovered ? 0 : 1,
+        duration: hovered ? 0.6 : 0.9,
+        ease: hovered ? 'power2.out' : 'power2.inOut',
+        overwrite: true
+      });
+    const onEnter = event => {
+      if (event.pointerType !== 'touch') glide(true);
+    };
+    const onLeave = () => glide(false);
+
+    const onDown = event => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      dragging = true;
+      pointerId = event.pointerId;
+      root.setPointerCapture?.(event.pointerId);
+      lastX = event.clientX;
+      lastY = event.clientY;
+      lastT = performance.now();
+      velocity = base * hover.scale + fling + boost;
+      const rect = svg.getBoundingClientRect();
+      center = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      root.style.cursor = 'grabbing';
+    };
+    const onMove = event => {
+      if (!dragging || event.pointerId !== pointerId) return;
+      const now = performance.now();
+      let delta;
+      if (circular) {
+        let turn =
+          Math.atan2(event.clientY - center.y, event.clientX - center.x) -
+          Math.atan2(lastY - center.y, lastX - center.x);
+        if (turn > Math.PI) turn -= Math.PI * 2;
+        if (turn < -Math.PI) turn += Math.PI * 2;
+        delta = turn * radius;
+      } else {
+        const scale = VIEW_W / (svg.getBoundingClientRect().width || VIEW_W);
+        delta = ((event.clientX - lastX) * Math.cos(angle) + (event.clientY - lastY) * Math.sin(angle)) * scale;
+      }
+      travel += delta;
+      apply();
+      const dt = Math.max(1, now - lastT) / 1000;
+      velocity = velocity * 0.6 + (delta / dt) * 0.4;
+      lastX = event.clientX;
+      lastY = event.clientY;
+      lastT = now;
+    };
+    const onUp = event => {
+      if (!dragging || event.pointerId !== pointerId) return;
+      dragging = false;
+      pointerId = null;
+      root.style.cursor = '';
+      if (reduced) return;
+      const release = performance.now() - lastT > 90 ? 0 : clamp(velocity, -MAX_FLING, MAX_FLING);
+      fling = release - (base * hover.scale + boost);
+    };
+
+    const onScroll = event => {
+      const source = event.target;
+      const isPage = source === document || source === document.documentElement || source === document.body;
+      if (!isPage && !(source instanceof Node && source.contains(root))) return;
+      const pos = isPage ? window.scrollY : source.scrollTop;
+      const now = performance.now();
+      if (source !== scrollSource || now - scrollAt > 200) {
+        scrollSource = source;
+        scrollPos = pos;
+        scrollAt = now;
+        return;
+      }
+      const instant = (pos - scrollPos) / (Math.max(8, now - scrollAt) / 1000);
+      scrollVelocity = scrollVelocity * 0.5 + instant * 0.5;
+      scrollPos = pos;
+      scrollAt = now;
+    };
+
+    if (s.pauseOnHover) {
+      root.addEventListener('pointerenter', onEnter);
+      root.addEventListener('pointerleave', onLeave);
+    }
+    if (s.draggable) {
+      root.addEventListener('pointerdown', onDown);
+      root.addEventListener('pointermove', onMove);
+      root.addEventListener('pointerup', onUp);
+      root.addEventListener('pointercancel', onUp);
+    }
+    if (boosting) window.addEventListener('scroll', onScroll, { capture: true, passive: true });
+
+    const observer =
+      typeof IntersectionObserver !== 'undefined'
+        ? new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting) start();
+            else stop();
+          })
+        : null;
+    if (observer) observer.observe(root);
+    else start();
+
+    stopAnim = () => {
+      observer?.disconnect();
+      stop();
+      gsap.killTweensOf(hover);
+      root.style.cursor = '';
+      root.removeEventListener('pointerenter', onEnter);
+      root.removeEventListener('pointerleave', onLeave);
+      root.removeEventListener('pointerdown', onDown);
+      root.removeEventListener('pointermove', onMove);
+      root.removeEventListener('pointerup', onUp);
+      root.removeEventListener('pointercancel', onUp);
+      window.removeEventListener('scroll', onScroll, { capture: true });
+      stopAnim = () => {};
+    };
+  };
+
+  // ---------- Ciclo de vida ----------
+  const build = () => {
+    stopAnim();
+    render();
+    const n = nodes;
+    measure(n);
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(() => measure(n)).catch(() => {});
+    }
+  };
+
+  build();
 
   return {
-    /** Atualiza opções em tempo real. Trocar `src` recria o efeito. */
+    /** Atualiza opções (reconstrói o SVG mantendo a posição do texto). */
     update(next = {}) {
-      const srcChanged = next.src !== undefined && next.src !== settings.src;
-      settings = { ...settings, ...next };
-      if (srcChanged) {
-        cleanup?.();
-        cleanup = setup();
-      } else {
-        wake();
-      }
+      s = { ...s, ...next };
+      build();
     },
-    /** Remove canvas, listeners e libera o contexto WebGL. */
+    /** Remove tudo e para a animação. */
     destroy() {
-      cleanup?.();
-      cleanup = null;
-      container.classList.remove('dither-veil');
+      stopAnim();
+      nodes = null;
+      container.replaceChildren();
+      container.classList.remove('text-loop', 'text-loop--draggable');
     }
   };
 }
 
-export default createDitherVeil;
-
-
-
-
-
-
-
-// Tabs sliding: the library card's own script, from library.html.
-(function () {
-  function findCard(el) { return el.closest("[data-proto-card]"); }
-
-  function readMs(name, fallback) {
-    var raw = getComputedStyle(document.documentElement)
-      .getPropertyValue(name).trim();
-    if (!raw) return fallback;
-    if (raw.slice(-2) === "ms") return parseFloat(raw);
-    if (raw.slice(-1) === "s")  return parseFloat(raw) * 1000;
-    var n = parseFloat(raw);
-    return isNaN(n) ? fallback : n;
-  }
-
-  (function initP16() {
-    var roots = document.querySelectorAll("[data-proto-tabs]");
-    if (!roots.length) return;
-    roots.forEach(function (root) {
-      var indicator = root.querySelector(".p16-indicator");
-      var tabs = Array.prototype.slice.call(
-        root.querySelectorAll(".p16-tab")
-      );
-      if (!indicator || !tabs.length) return;
-
-      function moveTo(tab, animate) {
-        var left = tab.offsetLeft;
-        var width = tab.offsetWidth;
-        if (!animate) {
-          var prev = indicator.style.transition;
-          indicator.style.transition = "none";
-          indicator.style.transform = "translateX(" + left + "px)";
-          indicator.style.width = width + "px";
-          // eslint-disable-next-line no-unused-expressions
-          indicator.offsetWidth;
-          indicator.style.transition = prev;
-        } else {
-          indicator.style.transform = "translateX(" + left + "px)";
-          indicator.style.width = width + "px";
-        }
-      }
-      function getActive() {
-        return tabs.find(function (t) {
-          return t.getAttribute("aria-selected") === "true";
-        }) || tabs[0];
-      }
-      tabs.forEach(function (t) {
-        t.addEventListener("click", function () {
-          tabs.forEach(function (other) {
-            other.setAttribute(
-              "aria-selected", other === t ? "true" : "false"
-            );
-          });
-          moveTo(t, true);
-        });
-      });
-      // Wait one frame so layout has settled and offsetLeft is stable.
-      window.requestAnimationFrame(function () {
-        moveTo(getActive(), false);
-      });
-      window.addEventListener("resize", function () {
-        moveTo(getActive(), false);
-      });
-    });
-  })();
-})();
+export default createTextLoop;

@@ -4,7 +4,7 @@
   box-sizing: border-box;
 }
 body {
-  background: rgba(66, 57, 57, 0.233);
+  background: rgb(0, 0, 0);
 }
 .header {
   width: 100%;
@@ -13,11 +13,18 @@ body {
   color: white;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  padding: 0 2vw;
   z-index: 10;
+
+  .logo__site {
+    width: 20vw;
+
+    img {
+      width: 100%;
+    }
+  }
 }
-
-
 
 .main {
   width: 100%;
@@ -39,7 +46,6 @@ body {
 .section {
   width: 100%;
   height: 100vh;
-  background: black;
   position: relative;
 
   #veil {
@@ -47,7 +53,30 @@ body {
     inset: 0;
     width: 100%;
     height: 100%;
-    z-index: 0;
+    z-index: 2;
     touch-action: none;
   }
+}
+.faixa {
+  width: 100%;
+  height: 30vh;
+  position: relative;
+}
+#faixa {
+  position: absolute;
+  width: clamp(50rem, 100%, 150rem);
+  height: clamp(5rem, 300%, 500rem);
+  top: -40vh;
+  cursor: grab;
+  z-index: 1;
+}
+#faixa:active {
+  cursor: grabbing;
+}
+
+.cards__infinitos {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  z-index: 2;
 }
