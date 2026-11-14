@@ -19,7 +19,7 @@ const DEFAULTS = {
   speed: 90,
   direction: 'forward', // 'forward' | 'reverse'
   separator: '✦',
-  curviness: 90,
+  curviness: 60,
   tilt: 0,
   fontSize: 46,
   fontWeight: 800,

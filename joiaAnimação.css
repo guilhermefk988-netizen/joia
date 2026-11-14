@@ -11,6 +11,7 @@
   --p16-text-active: #0f0f0f;
   --p16-bar-bg: #e2e2e2;
   --p16-pill-bg: #ffffff;
+  --p16-tab-h: 30px; /* altura compartilhada entre .p16-tab e .p16-indicator */
 }
 
 html[data-theme="dark"] {
@@ -32,8 +33,10 @@ html[data-theme="dark"] {
 }
 .card {
   position: relative;
-  width: 296px;
-  height: 260px;
+  width: 100%;
+  max-width: 296px;
+  height: auto;
+  aspect-ratio: 296 / 260;
   color: var(--text);
   font-family: var(--font-sans);
 }
@@ -52,15 +55,17 @@ html[data-theme="dark"] {
   position: absolute;
   left: 12px;
   top: 12px;
-  width: 296px;
+  width: min(296px, calc(100% - 24px));
   max-width: calc(100% - 24px);
-  height: 260px;
+  height: auto;
+  aspect-ratio: 296 / 260;
   border-radius: 14px;
   overflow: hidden;
   background: var(--stage-bg);
   display: flex;
   align-items: center;
   justify-content: center;
+  container-type: inline-size;
 }
 .card-stage::after {
   content: "";
@@ -85,6 +90,8 @@ html[data-theme="dark"] .card-stage::after {
   align-items: center;
   justify-content: center;
   padding-bottom: 56px;
+  padding-bottom: clamp(32px, 19cqw, 56px);
+  padding-inline: 8px;
 }
 .p16-stage-inner {
   padding-bottom: 0;
@@ -95,19 +102,35 @@ html[data-theme="dark"] .card-stage::after {
   align-items: center;
   gap: 3px;
   padding: 3px;
+  max-width: 100%;
+  min-width: 0;
   border-radius: 48px;
   background: var(--p16-bar-bg);
+
+  /* rolagem horizontal quando houver abas demais */
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none; /* Firefox */
+  -webkit-overflow-scrolling: touch;
 }
+.p16-tabs::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
 .p16-tab {
   position: relative;
+  flex: 0 0 auto; /* não deixa as abas encolherem nem quebrarem */
   appearance: none;
   box-sizing: border-box;
   border: 0;
   background: transparent;
-  height: 30px;
+  height: var(--p16-tab-h);
   padding: 4px 12px;
+  padding-inline: clamp(8px, 4cqw, 12px);
   font-family: var(--font-sans);
   font-size: 13px;
+  font-size: clamp(11px, 4.4cqw, 13px);
   font-weight: 500;
   line-height: 1.4;
   color: var(--p16-text-muted);
@@ -132,7 +155,7 @@ html[data-theme="dark"] .card-stage::after {
   position: absolute;
   top: 3px;
   left: 0;
-  height: 30px;
+  height: var(--p16-tab-h);
   width: 0;
   background: var(--p16-pill-bg);
   border-radius: 48px;
@@ -150,6 +173,16 @@ html[data-theme="dark"] .card-stage::after {
     right: 12px;
     width: auto;
     max-width: none;
+  }
+}
+
+/* Telas bem pequenas: abas um pouco mais compactas */
+@media (max-width: 360px) {
+  :root {
+    --p16-tab-h: 28px;
+  }
+  .p16-tabs {
+    gap: 2px;
   }
 }
 
@@ -200,7 +233,7 @@ html[data-theme="dark"] .card-stage::after {
   height: 100%;
   object-position: center;
   user-select: none;
-  scale: 1.2;
+  scale: 1.5;
     filter: brightness(10.65) contrast(10.15);
 
 }

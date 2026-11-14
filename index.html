@@ -27,11 +27,11 @@
                 <div class="stage-inner p16-stage-inner">
                     <div class="p16-tabs" data-proto-tabs role="tablist" aria-label="Mode">
                         <span class="p16-indicator" aria-hidden="true"></span>
-                        <button type="button" class="p16-tab" role="tab" aria-selected="true">Plan</button>
+                        <button type="button" class="p16-tab" role="tab" aria-selected="true">Inicio</button>
                         <button type="button" class="p16-tab" role="tab" aria-selected="false">Debug</button>
+                        <button type="button" class="p16-tab" role="tab" aria-selected="false">Sobre Nós</button>
                         <button type="button" class="p16-tab" role="tab" aria-selected="false">Ask</button>
-                        <button type="button" class="p16-tab" role="tab" aria-selected="false">Ask</button>
-                        <button type="button" class="p16-tab" role="tab" aria-selected="false">Ask</button>
+                        <button type="button" class="p16-tab" role="tab" aria-selected="false">Contatos</button>
                     </div>
                 </div>
             </div>
@@ -42,24 +42,37 @@
         </div>
     </header>
     <main class="main">
+        <div class="gradiente">
+
+        </div>
         <div class="fundo">
             <video class="video" autoplay muted loop playsinline>
                 <source src="./Videos/Video__fundo.mp4" type="video/mp4">
-
             </video>
+        </div>
+        <div class="texto">
+
         </div>
     </main>
 
     <section class="section">
+        <div class="fundo__diamante">
+            <img src="imgs/fundo__diamantão.png" alt="">
+        </div>
+
         <div id="veil"></div>
 
+        <section class="faixa">
+            <div id="faixa"></div>
+        </section>
     </section>
-    <section class="faixa">
-        <div id="faixa"></div>
 
-    </section>
 
     <section class="cards__infinitos">
+        <div class="fundo__do__infinito">
+            <img src="imgs/fundo__cards__infinitos.png" alt="">
+        </div>
+
         <div id="spiral"></div>
 
     </section>
@@ -73,7 +86,7 @@
             src: './imgs/logo.png',
 
             pattern: 'floyd',
-            pixelSize: 2,
+            pixelSize: 1,
             revealRadius: 200,
             wander: true,
             transparent: true,

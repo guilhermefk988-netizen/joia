@@ -5,6 +5,7 @@
 }
 body {
   background: rgb(0, 0, 0);
+  overflow-x: hidden;
 }
 .header {
   width: 100%;
@@ -42,6 +43,19 @@ body {
       object-fit: cover;
     }
   }
+  .gradiente {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    background: linear-gradient(20deg, black 15%, transparent, transparent);
+  }
+  .texto {
+    width: 50%;
+    height: 100%;
+    position: relative;
+    z-index: 2;
+  }
 }
 .section {
   width: 100%;
@@ -51,27 +65,51 @@ body {
   #veil {
     position: absolute; /* ou absolute, se quiser só dentro de uma seção */
     inset: 0;
-    width: 100%;
+    width: 60vw;
     height: 100%;
     z-index: 2;
     touch-action: none;
+    left: 40vw;
+  }
+  .faixa {
+    width: 100%;
+    height: 100vh;
+    position: relative;
+  }
+  #faixa {
+    position: absolute;
+    width: clamp(50rem, 100%, 150rem);
+    height: clamp(5rem, 300%, 500rem);
+    bottom: -130vh;
+    cursor: grab;
+    z-index: 1;
+  }
+  #faixa:active {
+    cursor: grabbing;
+  }
+
+  .fundo__diamante {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
   }
 }
-.faixa {
-  width: 100%;
-  height: 30vh;
-  position: relative;
-}
-#faixa {
-  position: absolute;
-  width: clamp(50rem, 100%, 150rem);
-  height: clamp(5rem, 300%, 500rem);
-  top: -40vh;
-  cursor: grab;
-  z-index: 1;
-}
-#faixa:active {
-  cursor: grabbing;
+
+@media (max-width:768px){
+  .section{
+ 
+    #veil{
+      width: 100%;
+      height: 60%;
+      left: 0;
+      top: 40vw;
+    }
+  }
 }
 
 .cards__infinitos {
@@ -79,4 +117,18 @@ body {
   height: 100vh;
   position: relative;
   z-index: 2;
+
+  .fundo__do__infinito {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    z-index: -1;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center right;
+    }
+  }
 }
