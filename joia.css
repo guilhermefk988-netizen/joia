@@ -548,10 +548,10 @@ body {
     .contato__card {
       width: 100%;
       height: 100%;
-      background: rgba(255, 0, 0, 0.192);
       display: flex;
       flex-direction: column;
       justify-content: center;
+      border-left: rgba(255, 217, 0, 0.301) solid 1px;
       padding: 0 3vw;
       img {
         width: 100%;
@@ -567,7 +567,6 @@ body {
       .mini__card {
         width: 100%;
         height: 100%;
-        background: rgba(127, 255, 212, 0.527);
         display: flex;
         flex-direction: column;
         align-items: center;
