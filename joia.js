@@ -189,3 +189,34 @@ function encontrarImagem(objeto) {
 
 
 AtivarAPI()
+
+
+
+gsap.registerPlugin(ScrollTrigger);
+
+gsap.fromTo(".fundo__Diamante3D img",
+  { yPercent: -20 },
+  {
+    yPercent: 8,
+    ease: "none",
+    scrollTrigger: {
+      trigger: ".Diamante__3D__area",
+      start: "top bottom",
+      end: "bottom top",
+      scrub: true
+    }
+  }
+);
+gsap.fromTo(".fundo__Diamante3D h1",
+  { yPercent: -200 },
+  {
+    yPercent: 80,
+    ease: "none",
+    scrollTrigger: {
+      trigger: ".Diamante__3D__area",
+      start: "top bottom",
+      end: "bottom top",
+      scrub: true
+    }
+  }
+);
