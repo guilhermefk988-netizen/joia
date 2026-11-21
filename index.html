@@ -19,7 +19,14 @@
     <script type="module" src="./joiafaixa.js"></script>
     <script type="module" src="./joianimada.js"></script>
     <script type="module" src="./cardInfinito.js"></script>
-
+    <script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/"
+  }
+}
+</script>
 
 </head>
 
@@ -46,7 +53,9 @@
         </div>
 
         <div class="input">
-            <input type="text">
+            <button><img width="30" height="30" src="https://img.icons8.com/ios-glyphs/30/search--v1.png"
+                    alt="search--v1" />
+            </button>
         </div>
     </header>
     <main class="main">
@@ -127,19 +136,55 @@
         <div class="fundo__do__infinito">
             <img src="imgs/fundo__cards__infinitos.png" alt="">
         </div>
+         <div class="gradiente1"></div>
+         <div class="gradiente2"></div>
+
 
         <div id="spiral"></div>
 
     </section>
 
     <article class="pesquisa">
+        <div class="fundo__pesquisa">
+            <img src="imgs/fundo__pesquisa.png" alt="">
+        </div>
+        <div class="pesquisa__texto">
+            <h3> EXCELÊNCIA EM CADA DETALHE</h3>
+            <h2>Encontre a joia</h2>
+            <i>
+                <h2><span> perfeita</span></h2>
+            </i>
 
+            <p>Beleza atemporal, sofisticação e qualidade em cada detalhe.</p>
+        </div>
+
+        <div class="parte__pesquisa">
+            <div class="barra__de__pesquisa">
+                <div class="barraPesquisa">
+                    <img width="30" height="30" src="https://img.icons8.com/ios-glyphs/30/ffffff/search--v1.png"
+                        alt="search--v1" />
+                    <input class="Input__pesquisa" type="text">
+                </div>
+            </div>
+
+            <div class="sugentões">
+
+            </div>
+        </div>
+
+        <div class="area__dasPesquisas">
+
+        </div>
+
+        <div class="ERRO">
+        </div>
     </article>
 
     <section class="Materiais">
         <div class="fundo__materiais">
             <img src="imgs/fundo__materiais.png" alt="">
         </div>
+        <div class="gradiente"></div>
 
         <div class="materiais__area">
             <div class="textão__mateiaris">
@@ -228,11 +273,40 @@
     </section>
 
     <section class="Diamante__3D__area">
-    <div class="fundo__Diamante3D">
-        <img src="imgs/fundo__diamante__3D.png" alt="">
-    </div>
-    <h1>TESTANDO</h1>
-</section>
+        <div class="fundo__Diamante3D">
+            <img src="imgs/fundo__diamante__3D.png" alt="">
+        </div>
+        <div class="gradiente1"> </div>
+        <div class="gradiente2"></div>
+        <div class="sessao1__3D">
+            <div class="texto__um3D">
+                <h2>Brilho que</h2>
+                <h2><span>atravessa</span></h2>
+                <h2>gerações.</h2>
+                <p>Cada joia é criada com precisão absoluta, utilizando
+                    diamantes certificados e metais nobres para celebrar
+                    os momentos mais importantes da sua história.</p>
+            </div>
+
+        </div>
+
+        <div class="sessao2__3D">
+            <div class="texto__dois3D">
+                <h3>EXCELÊNCIA EM CADA DETALHE</h3>
+                <h2>Tradição e</h2>
+                <h2>inovação em</h2>
+                <h2><span>perfeita sintonia.</span></h2>
+                <p>Unimos tradição artesanal, design contemporâneo
+                    e materiais excepcionais para criar peças que
+                    atravessam gerações.</p>
+            </div>
+            <div class="alinhar3D">
+                <div class="Diamante__3D">
+                </div>
+            </div>
+        </div>
+
+    </section>
 
     <footer class="contatos">
 
@@ -308,7 +382,7 @@
             pattern: 'floyd',
             pixelSize: 1,
             revealRadius: 200,
-            wander: true,
+            wander: false,
             transparent: true,
         });
 

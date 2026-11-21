@@ -17,6 +17,7 @@ body {
   --CormorantGaramond: "Cormorant Garamond", serif;
   --BodoniModa: "Bodoni Moda", serif;
   --poppins: "Poppins", sans-serif;
+  --p: clamp(0.7rem, 1.2vw, 2rem);
 }
 
 .header {
@@ -36,6 +37,9 @@ body {
     img {
       width: 100%;
     }
+  }
+  .input {
+    padding: 0 10vw;
   }
 }
 
@@ -112,7 +116,8 @@ body {
   width: 100%;
   height: 100vh;
   position: relative;
-
+z-index: 2;
+ 
   .texto__diamante__grande {
     width: 100%;
     height: 100%;
@@ -265,6 +270,21 @@ body {
   position: relative;
   z-index: 2;
 
+   .gradiente1{
+    width: 100%;
+    height: 30%;
+    position: absolute;
+    bottom: 0;
+    background: linear-gradient(0deg , black ,transparent);
+    z-index: 1;
+  }
+  .gradiente2{
+    width: 100%;
+    height: 30%;
+    position: absolute;
+    background: linear-gradient(180deg , black ,transparent);
+    z-index: 1;
+  }
   .fundo__do__infinito {
     width: 100%;
     height: 100%;
@@ -283,18 +303,210 @@ body {
 .pesquisa {
   width: 100%;
   height: 100vh;
-  background: chocolate;
-  position: relative;
+  display: none;
+  flex-direction: column;
+  position: absolute;
   z-index: 2;
+  top: 0;
+
+  .fundo__pesquisa {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .pesquisa__texto {
+    width: 100%;
+    height: 45vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 6vw;
+
+    h3 {
+      padding-top: 10vw;
+      font-size: clamp(0.8rem, 1vw, 2rem);
+    }
+    h2 {
+      font-size: clamp(4.5rem, 6.5vw, 10rem);
+      font-family: var(--CormorantGaramond);
+      line-height: clamp(5rem, 7vw, 10rem);
+      background: linear-gradient(
+        180deg,
+        #ffffff 0%,
+        #f6f4f1 35%,
+        #d9d5cf 75%,
+        #b6b0a9 100%
+      );
+
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    span {
+      background: linear-gradient(
+        135deg,
+        #6e5138 0%,
+        #b98a60 25%,
+        #edd3b2 55%,
+        #b07d55 80%,
+        #5e4330 100%
+      );
+
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    p {
+      font-weight: 200;
+      font-size: var(--p);
+    }
+  }
+  .parte__pesquisa {
+    width: 100%;
+    height: clamp(10rem, 15vh, 25rem);
+    display: flex;
+  }
+
+  .barra__de__pesquisa {
+    width: 40%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .barraPesquisa {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: solid 1px black;
+      border-radius: 3vw;
+      padding: 0.2vw 0.5vw;
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(255, 255, 255, 0.02) 45%,
+        rgba(198, 161, 91, 0.08) 100%
+      );
+
+      input {
+        width: clamp(15rem, 20vw, 30rem);
+        border: none;
+        outline: none;
+        background: none;
+        color: var(--Branco);
+        padding: 0 0.5vw;
+      }
+    }
+  }
+  .area__dasPesquisas {
+    width: 100%;
+    height: 40vh;
+    display: grid;
+    grid-template-columns: repeat(4, 23%);
+    place-items: center;
+    justify-content: center;
+    overflow: auto;
+    gap: 1vw;
+    padding: 2vw 0;
+    .card__pesquisa {
+      width: 100%;
+      height: 30vh;
+      border-radius: 1vw;
+      position: relative;
+      box-shadow: 0 0 10px #000000;
+      overflow: hidden;
+      transition: 0.3s;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        position: absolute;
+        z-index: -1;
+      }
+      .card__pesquisa:hover {
+        img {
+          scale: 1.15;
+        }
+      }
+    }
+  }
+  .sugentões {
+    width: 60%;
+    height: 100%;
+    background: rgba(0, 0, 255, 0.384);
+  }
+
+  .ERRO {
+    width: 100vw;
+    height: 40vh;
+    background: black;
+    display: none;
+    align-items: center;
+    position: absolute;
+    bottom: 0;
+    justify-content: center;
+
+    h2 {
+      font-size: 12vw;
+      color: rgba(255, 255, 255, 0.664);
+    }
+  }
 }
+
+@media (max-width: 760px) {
+  .pesquisa {
+    .area__dasPesquisas {
+      grid-template-columns: repeat(3, 30%);
+    }
+  }
+}
+@media (max-width: 600px) {
+  .pesquisa {
+    .area__dasPesquisas {
+      grid-template-columns: repeat(2, 48%);
+    }
+  }
+}
+@media (max-width: 450px) {
+  .pesquisa {
+    .area__dasPesquisas {
+      grid-template-columns: repeat(1, 98%);
+    }
+    .parte__pesquisa {
+      flex-direction: column;
+    }
+    .barra__de__pesquisa {
+      width: 100%;
+    }
+    .sugentões {
+      width: 100%;
+    }
+  }
+}
+
 .Materiais {
   width: 100%;
   height: 100vh;
   position: relative;
+  z-index: 3;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
+
+  .gradiente{
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background: linear-gradient(180deg , black ,transparent);
+    z-index: -1;
+  }
 
   .materiais__area {
     width: 100%;
@@ -501,17 +713,16 @@ body {
 
 .Diamante__3D__area {
   width: 100%;
-  height: 150vh;
+  height: 200vh;
   position: relative;
   overflow: hidden;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
 
   .fundo__Diamante3D {
     position: absolute;
-    inset: -10% 0;      /* mais alto que a seção, sobra espaço pro parallax */
-    z-index: 1;
+    inset: -10% 0; /* mais alto que a seção, sobra espaço pro parallax */
+    z-index: -1;
 
     img {
       width: 100%;
@@ -521,9 +732,98 @@ body {
     }
   }
 
-  h1 {
+  .sessao1__3D {
+    width: 100%;
+    height: 50%;
     position: relative;
-    z-index: 2;         /* fica acima da imagem */
+    display: flex;
+  }
+
+  .texto__um3D {
+    width: 50%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 4vw;
+    
+  }
+  h2 {
+      font-family: var(--CormorantGaramond);
+      font-size: 8vw;
+      line-height: 7vw;
+      
+       background: linear-gradient(
+        135deg,
+        #FFFFFF 0%,
+        #F9F7F4 20%,
+        #F2ECE4 40%,
+        #DDD2C3 70%,
+        #FFFFFF 100%
+    );
+
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+      }
+      span {
+        background: linear-gradient(
+          135deg,
+          #fff8ed 0%,
+          #f6e1ba 15%,
+          #e0b46c 35%,
+          #b97a37 50%,
+          #f6e1ba 70%,
+          #fff8ed 100%
+        );
+
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+    
+    p {
+      padding-top: 4vw;
+      font-size: var(--p);
+    }
+  .sessao2__3D {
+    width: 100vw;
+    height: 50%;
+    position: relative;
+    display: flex;
+    justify-content: end;
+  }
+  .texto__dois3D {
+    width: 55%;
+    height: 100%;
+    position: relative;
+  }
+  .alinhar3D {
+    width: clamp(20rem, 50vw, 100vw);
+    height: 50vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    z-index: 4;
+    left: 0;
+  }
+  .Diamante__3D {
+    width: clamp(20rem, 50vw, 100vw);
+    height: 50vw;
+    z-index: 4;
+    left: 0;
+    transform: translate(100%, -100%);
+  }
+  .gradiente1{
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background: linear-gradient(150deg , black , transparent ,transparent);
+  }
+    .gradiente2{
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background: linear-gradient(330deg , black , transparent ,transparent);
   }
 }
 
