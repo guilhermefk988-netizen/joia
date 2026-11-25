@@ -276,6 +276,7 @@ loader.load("./Os__Meus__3D/anel.glb", (gltf) => {
     
             }
         });*/
+        
     gsap.to(modulo.rotation, {
         x: 1.5,
         y: 5,
@@ -301,6 +302,13 @@ loader.load("./Os__Meus__3D/anel.glb", (gltf) => {
         }
     });
 });
+
+ScrollSmoother.create({
+    smooth: 1,
+    smootherTouch: 0,
+    effects: true,
+})
+
 
 function ativar3D() {
     requestAnimationFrame(ativar3D)
@@ -331,23 +339,15 @@ if (modulo) {
 
 
 
-const AreaPesquisa = document.querySelector(".pesquisa")
-const AtivarPesquisa = document.querySelector(".input button")
-AtivarPesquisa.addEventListener('click', function () {
 
-    if (AreaPesquisa.style.display === "none") {
-        AreaPesquisa.style.display = "flex"
-        
-    } else {
-        AreaPesquisa.style.display = "none"
-    }
-})
+
 // ===============================
 // PESQUISA DE JOIAS
 // ===============================
 
 
-
+const AreaPesquisa = document.querySelector(".pesquisa")
+const AtivarPesquisa = document.querySelector(".input button")
 const gridCards = document.querySelector(".area__dasPesquisas");
 const ERRo = document.querySelector(".ERRO");
 const pesquisa = document.querySelector(".Input__pesquisa");
@@ -359,6 +359,7 @@ let carregou = false;
 AtivarPesquisa.addEventListener("click", () => {
     const aberta = AreaPesquisa.classList.toggle("aberta");
     document.body.style.overflow = aberta ? "" : "hidden";
+    AreaPesquisa.style.display = aberta ? "none" : "flex";
 
     if (aberta && !carregou) {
         carregarJoias();

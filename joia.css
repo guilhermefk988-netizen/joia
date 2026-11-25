@@ -47,6 +47,7 @@ body {
   width: 100%;
   height: 100dvh;
   position: relative;
+  z-index: 4;
 
   .fundo {
     position: absolute;
@@ -116,8 +117,8 @@ body {
   width: 100%;
   height: 100vh;
   position: relative;
-z-index: 2;
- 
+  z-index: 2;
+
   .texto__diamante__grande {
     width: 100%;
     height: 100%;
@@ -270,19 +271,19 @@ z-index: 2;
   position: relative;
   z-index: 2;
 
-   .gradiente1{
+  .gradiente1 {
     width: 100%;
     height: 30%;
     position: absolute;
     bottom: 0;
-    background: linear-gradient(0deg , black ,transparent);
+    background: linear-gradient(0deg, black, transparent);
     z-index: 1;
   }
-  .gradiente2{
+  .gradiente2 {
     width: 100%;
     height: 30%;
     position: absolute;
-    background: linear-gradient(180deg , black ,transparent);
+    background: linear-gradient(180deg, black, transparent);
     z-index: 1;
   }
   .fundo__do__infinito {
@@ -306,7 +307,7 @@ z-index: 2;
   display: none;
   flex-direction: column;
   position: absolute;
-  z-index: 2;
+  z-index: 5;
   top: 0;
 
   .fundo__pesquisa {
@@ -500,11 +501,11 @@ z-index: 2;
   justify-content: center;
   flex-direction: column;
 
-  .gradiente{
+  .gradiente {
     width: 100%;
     height: 100%;
     position: absolute;
-    background: linear-gradient(180deg , black ,transparent);
+    background: linear-gradient(180deg, black, transparent);
     z-index: -1;
   }
 
@@ -722,7 +723,7 @@ z-index: 2;
   .fundo__Diamante3D {
     position: absolute;
     inset: -10% 0; /* mais alto que a seção, sobra espaço pro parallax */
-    z-index: -1;
+    z-index: -2;
 
     img {
       width: 100%;
@@ -740,50 +741,48 @@ z-index: 2;
   }
 
   .texto__um3D {
-    width: 50%;
+    width: clamp(25rem, 50vw, 80rem);
     height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center;
     padding: 0 4vw;
-    
   }
   h2 {
-      font-family: var(--CormorantGaramond);
-      font-size: 8vw;
-      line-height: 7vw;
-      
-       background: linear-gradient(
-        135deg,
-        #FFFFFF 0%,
-        #F9F7F4 20%,
-        #F2ECE4 40%,
-        #DDD2C3 70%,
-        #FFFFFF 100%
+    font-family: var(--CormorantGaramond);
+    font-size: clamp(4rem, 8vw, 14rem);
+    line-height: clamp(4rem, 7vw, 12rem);
+    background: linear-gradient(
+      135deg,
+      #ffffff 0%,
+      #f9f7f4 20%,
+      #f2ece4 40%,
+      #ddd2c3 70%,
+      #ffffff 100%
     );
 
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-      }
-      span {
-        background: linear-gradient(
-          135deg,
-          #fff8ed 0%,
-          #f6e1ba 15%,
-          #e0b46c 35%,
-          #b97a37 50%,
-          #f6e1ba 70%,
-          #fff8ed 100%
-        );
+  }
+  span {
+    background: linear-gradient(
+      135deg,
+      #fff8ed 0%,
+      #f6e1ba 15%,
+      #e0b46c 35%,
+      #b97a37 50%,
+      #f6e1ba 70%,
+      #fff8ed 100%
+    );
 
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-      }
-    
-    p {
-      padding-top: 4vw;
-      font-size: var(--p);
-    }
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  p {
+    padding-top: 4vw;
+    font-size: var(--p);
+  }
   .sessao2__3D {
     width: 100vw;
     height: 50%;
@@ -792,38 +791,218 @@ z-index: 2;
     justify-content: end;
   }
   .texto__dois3D {
-    width: 55%;
+    width: clamp(20rem, 55vw, 80rem);
     height: 100%;
     position: relative;
   }
   .alinhar3D {
     width: clamp(20rem, 50vw, 100vw);
-    height: 50vw;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     position: absolute;
-    z-index: 4;
+    z-index: -1;
+    bottom: 0;
     left: 0;
   }
   .Diamante__3D {
-    width: clamp(20rem, 50vw, 100vw);
-    height: 50vw;
+    width: 100%;
+    height: 100%;
     z-index: 4;
     left: 0;
     transform: translate(100%, -100%);
   }
-  .gradiente1{
+  .gradiente1 {
     width: 100%;
     height: 100%;
     position: absolute;
-    background: linear-gradient(150deg , black , transparent ,transparent);
+    z-index: 0;
+    background: linear-gradient(150deg, black, transparent, transparent);
   }
-    .gradiente2{
+  .gradiente2 {
     width: 100%;
     height: 100%;
     position: absolute;
-    background: linear-gradient(330deg , black , transparent ,transparent);
+    z-index: 0;
+    background: linear-gradient(330deg, black, transparent, transparent);
+  }
+}
+
+@media (max-width: 500px) {
+  .Diamante__3D__area {
+    .alinhar3D {
+      width: 100%;
+    }
+    .Diamante__3D {
+      transform: translate(0%, -100%);
+    }
+    .texto__dois3D {
+      width: 100%;
+      padding: 0 0.9rem;
+    }
+    .gradiente2 {
+      background: linear-gradient(300deg, black 2%, transparent, transparent);
+    }
+  }
+}
+
+.consutorio {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+
+  .fundo__consutorio {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    z-index: -1;
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .texto__consutorio {
+    width: 100%;
+    height: 60%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 6vw;
+
+    h3 {
+      background: linear-gradient(90deg, #866244 0%, #e2c297 50%, #876344 100%);
+      background-clip: text;
+      color: transparent;
+      font-weight: 500;
+    }
+    h2 {
+      line-height: clamp(4rem, 5vw, 8rem);
+      font-size: clamp(4rem, 6vw, 10rem);
+
+      font-family: var(--CormorantGaramond);
+      background: linear-gradient(
+        180deg,
+        #ffffff 0%,
+        #f7f5f2 20%,
+        #e5e0d9 55%,
+        #beb7af 100%
+      );
+      background-clip: text;
+      color: transparent;
+    }
+    span {
+      background: linear-gradient(
+        135deg,
+        #6c4c34 0%,
+        #a97a53 20%,
+        #f3d5b3 48%,
+        #c89c6a 72%,
+        #7a563c 100%
+      );
+
+      background-clip: text;
+      color: transparent;
+    }
+    p {
+      font-size: var(--p);
+      font-weight: 300;
+      width: clamp(15rem, 42vw, 60rem);
+      text-align: justify;
+      padding-top: 3vw;
+    }
+  }
+
+  .area__barra {
+    width: 100%;
+    height: 40%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .barra__consutorio {
+      width: 90%;
+      height: 60%;
+      box-shadow: 0 0 20px black;
+      border-radius: 3vw;
+      backdrop-filter: blur(0.5rem);
+      background: rgba(0, 0, 0, 0.247);
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      place-items: center;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      gap: 0.1rem;
+
+      .barra__card {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+
+        img {
+          width: clamp(2rem,4vw,6rem);
+          height: auto;
+          object-fit: cover;
+        }
+        h2 {
+          font-family: var(--inter);
+          font-weight: 500;
+          font-size: clamp(1rem,2vw,3.5rem);
+            background: linear-gradient(
+        135deg,
+        #6c4c34 0%,
+        #a97a53 20%,
+        #f3d5b3 48%,
+        #c89c6a 72%,
+        #7a563c 100%
+      );
+
+      background-clip: text;
+      color: transparent;
+        }
+        p {
+          font-weight: 200;
+          font-size: var(--p);
+          text-align: center;
+          width: 90%;
+        }
+      }
+      .barra__card:nth-child(1) {
+        grid-column: 1 / 4;
+      }
+    }
+  }
+}
+@media (max-width: 760px) {
+  .consutorio {
+    .area__barra {
+      .barra__consutorio {
+        height: 80%;
+        grid-template-columns: repeat(2, 1fr);
+        .barra__card {
+          height: 100%;
+        }
+        .barra__card:nth-child(1) {
+          grid-column: 1 / 3;
+        }
+        .barra__card:nth-child(2) {
+          grid-column: 1 / 2;
+        }
+        .barra__card:nth-child(3) {
+          grid-column: 2 / 3; /* 50% */
+        }
+        .barra__card:nth-child(4) {
+          grid-column: 1 / 3;
+        }
+      }
+    }
   }
 }
 
@@ -914,7 +1093,31 @@ z-index: 2;
   .Polita__de__privacidade {
     width: 100%;
     height: 10%;
-    background: green;
+    display: flex;
+    border-top: 2px solid rgba(255, 217, 0, 0.527);
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 3vw;
+    p {
+      font-weight: 300;
+      font-size: var(--p);
+    }
+  }
+  .email {
+    border: solid 1px black;
+    background: red;
+    display: flex;
+    align-items: center;
+    input {
+      background: none;
+      height: 100%;
+    }
+    button {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 50%;
+      background: green;
+    }
   }
 }
 
@@ -925,7 +1128,6 @@ z-index: 2;
       height: 80%;
       .contato__card {
         height: 100%;
-        background: red;
       }
     }
   }
