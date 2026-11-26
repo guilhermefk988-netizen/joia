@@ -42,11 +42,16 @@
                     <div class="p16-tabs" data-proto-tabs role="tablist" aria-label="Mode">
                         <span class="p16-indicator" aria-hidden="true"></span>
                         <button type="button" class="p16-tab" role="tab" aria-selected="true"><a
-                                href="#">Inicio</a></button>
-                        <button type="button" class="p16-tab" role="tab" aria-selected="false">Debug</button>
-                        <button type="button" class="p16-tab" role="tab" aria-selected="false">Sobre Nós</button>
-                        <button type="button" class="p16-tab" role="tab" aria-selected="false">Máteriais</button>
-                        <button type="button" class="p16-tab" role="tab" aria-selected="false">Contatos</button>
+                                href="#Inicio">Inicio</a></button>
+                        <button type="button" class="p16-tab" role="tab" aria-selected="false"><a
+                                href="#Sobre__Nós">Sobre Nós</a></button>
+                        <button type="button" class="p16-tab" role="tab" aria-selected="false"><a href="#consutorio">
+                                Consutorio </a></button>
+                        <button type="button" class="p16-tab" role="tab" aria-selected="false"><a
+                                href="#Máteriais">Máteriais</a></button>
+                        <button type="button" class="p16-tab" role="tab" aria-selected="false"><a
+                                href="#Contatos">Contatos
+                            </a></button>
                     </div>
                 </div>
             </div>
@@ -54,15 +59,16 @@
 
         <div class="input">
             <button>
-                <a href="#pesquisas">
-                    <img width="30" height="30" src="https://img.icons8.com/ios-glyphs/30/search--v1.png"
-                        alt="search--v1" /></a>
+                <a href="#pesquisasLugar">
+                    <img width="30" height="30" src="https://img.icons8.com/ios-glyphs/30/ffffff/search--v1.png"
+                        alt="search--v1" />
+                </a>
             </button>
         </div>
     </header>
     <div id="smooth-wrapper">
         <div id="smooth-content">
-            <main class="main">
+            <main id="Inicio" class="main">
                 <div class="gradiente">
 
                 </div>
@@ -81,7 +87,7 @@
                 </div>
             </main>
 
-            <section class="section">
+            <section id="Sobre__Nós" class="section">
                 <div class="fundo__diamante">
                     <img src="imgs/fundo__diamantão.png" alt="">
                 </div>
@@ -136,7 +142,7 @@
             </section>
 
 
-            <section class="cards__infinitos">
+            <section id="Essencia" class="cards__infinitos">
                 <div class="fundo__do__infinito">
                     <img src="imgs/fundo__cards__infinitos.png" alt="">
                 </div>
@@ -148,7 +154,7 @@
 
             </section>
 
-            <article id="pesquisas" class="pesquisa">
+            <article id="pesquisasLugar" class="pesquisa">
                 <div class="fundo__pesquisa">
                     <img src="imgs/fundo__pesquisa.png" alt="">
                 </div>
@@ -184,7 +190,7 @@
                 </div>
             </article>
 
-            <section class="Materiais">
+            <section id="Máteriais" class="Materiais">
                 <div class="fundo__materiais">
                     <img src="imgs/fundo__materiais.png" alt="">
                 </div>
@@ -315,7 +321,7 @@
 
             </section>
 
-            <section class="consutorio">
+            <section id="consutorio" class="consutorio">
                 <div data-speed="0.3" class="fundo__consutorio">
                     <img src="imgs/FUNDO__CONSUTORIO.png" alt="">
                 </div>
@@ -402,15 +408,25 @@
                         <p>Receba novidades e ofertas exclusivas.</p>
 
                         <div class="email">
-                            <input type="text">
-                            <button></button>
+                            <input placeholder="Seu E-mail" type="text">
+                            <button><img width="38" height="38"
+                                    src="https://img.icons8.com/fluency-systems-filled/48/long-arrow-right.png"
+                                    alt="long-arrow-right" /></button>
                         </div>
 
                         <div class="redes">
-                            <img src="" alt="">
-                            <img src="" alt="">
-                            <img src="" alt="">
-                            <img src="" alt="">
+                            <div class="imagem__rede"> <img width="30" height="30"
+                                    src="https://img.icons8.com/ios/50/D9B78C/instagram-new--v1.png"
+                                    alt="instagram-new--v1" /></div>
+                            <div class="imagem__rede">
+                                <img width="50" height="50" src="https://img.icons8.com/ios/50/D9B78C/pinterest--v1.png"
+                                    alt="pinterest--v1" />
+                            </div>
+                            <div class="imagem__rede"> <img width="30" height="30"
+                                    src="https://img.icons8.com/ios-filled/50/D9B78C/youtube-play.png"
+                                    alt="youtube-play" /></div>
+                            <div class="imagem__rede"> <img width="30" height="30"
+                                    src="https://img.icons8.com/emoji/48/D9B78C/tiktok.png" alt="tiktok" /></div>
                         </div>
 
                     </div>

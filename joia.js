@@ -276,7 +276,7 @@ loader.load("./Os__Meus__3D/anel.glb", (gltf) => {
     
             }
         });*/
-        
+
     gsap.to(modulo.rotation, {
         x: 1.5,
         y: 5,
@@ -412,11 +412,13 @@ function cards(lista) {
 
         return `
             <div class="card__pesquisa">
-             <a  href="${item.url}" target="_blank" rel="noopener">
                 <img src="${img?.url ?? ""}" alt="${img?.alt ?? item.title}">
+                             <a  href="${item.url}" target="_blank" rel="noopener">
+
                 <h3>${item.title}</h3>
-                <p>From $${item.priceFrom}</p>
-             </a>  
+                </a>  
+                <p>Preço $${item.priceFrom}</p>
+             
             </div>
         `;
     }).join("");
@@ -475,4 +477,21 @@ function pesquisar() {
 // Pesquisar com Enter
 pesquisa.addEventListener("keydown", (event) => {
     if (event.key === "Enter") pesquisar();
+});
+const smoother = ScrollSmoother.create({
+    wrapper: "#smooth-wrapper",
+    content: "#smooth-content",
+    smooth: 1.2,
+    effects: true
+});
+
+document.querySelectorAll('a[href^="#"]').forEach(link => {
+    link.addEventListener("click", (e) => {
+        const id = link.getAttribute("href");
+        if (id.length < 2) return;          // ignora "#" sozinho
+        const alvo = document.querySelector(id);
+        if (!alvo) return;
+        e.preventDefault();
+        smoother.scrollTo(alvo, true, "top top");
+    });
 });
